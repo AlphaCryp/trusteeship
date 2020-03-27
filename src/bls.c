@@ -53,6 +53,7 @@
     element_from_bytes(secret_key, data);
     element_from_hash(h, msg, msg_len);
     element_pow_zn(sig, h, secret_key);
+
     *out_len = element_length_in_bytes_compressed(sig);
     element_to_bytes_compressed(out, sig);
     
@@ -128,8 +129,8 @@ void aggregate_c(uint8_t* sig1, uint8_t* sig2, uint8_t* out, size_t *out_len) {
     element_clear(sig_1);
 }
 
-void derived_c(uint8_t* g, uint8_t* id, uint8_t* sk, uint8_t* out_sk, size_t *sk_len, uint8_t* out_pk, size_t *pk_len) {
-    element_t rand;
+void derived_c(uint8_t* g, uint8_t* rand, uint8_t* id, uint8_t* sk, uint8_t* out_sk, size_t *sk_len, uint8_t* out_pk, size_t *pk_len) {
+    element_t rand_;
     element_t id_;
     element_t sk_;
     pairing_t pairing;
@@ -139,8 +140,7 @@ void derived_c(uint8_t* g, uint8_t* id, uint8_t* sk, uint8_t* out_sk, size_t *sk
     pairing_init_set_buf(pairing, param, strlen(param));
 
 
-    element_init_Zr(rand, pairing);
-    element_random(rand);
+    element_init_Zr(rand_, pairing);
     element_init_G2(g_, pairing);
     element_init_Zr(id_, pairing);
     element_init_Zr(sk_, pairing);
@@ -148,10 +148,17 @@ void derived_c(uint8_t* g, uint8_t* id, uint8_t* sk, uint8_t* out_sk, size_t *sk
     element_init_G2(public_key, pairing);
 
     element_from_bytes_compressed(g_, g);
-    element_from_bytes(id_, id);
+    
     element_from_bytes(sk_, sk);
+    element_from_bytes(rand_, rand);
 
-    element_mul(secret_key, rand, id_);
+    if (id[7] == 1) {
+        element_set1(id_);
+    } else {
+        element_set_si(id_, 2);
+    }
+
+    element_mul(secret_key, rand_, id_);
     element_add(secret_key, secret_key, sk_);
 
 
@@ -163,7 +170,7 @@ void derived_c(uint8_t* g, uint8_t* id, uint8_t* sk, uint8_t* out_sk, size_t *sk
     *pk_len = element_length_in_bytes_compressed(public_key);
     element_to_bytes_compressed(out_pk, public_key);
 
-    element_clear(rand);
+    element_clear(rand_);
     element_clear(id_);
     element_clear(sk_);
     element_clear(public_key);
@@ -172,12 +179,17 @@ void derived_c(uint8_t* g, uint8_t* id, uint8_t* sk, uint8_t* out_sk, size_t *sk
     pairing_clear(pairing);
 }
 
-void blind_c(uint8_t* msg, size_t msg_len, uint8_t* self_id, uint8_t* other_id, uint8_t* msg_out, size_t* out_len) {
+void blind_c(uint8_t* msg, size_t msg_len, uint8_t* self_id, 
+uint8_t* other_id, uint8_t* msg_out, size_t* out_len, 
+uint8_t* tmp_out, size_t* tmp_len, uint8_t* sk,
+uint8_t* tmp_out_1, size_t* tmp_len_1
+) {
     element_t h;
     pairing_t pairing;
     element_t zero;
     element_t id_self, id_other;
     element_t tmp1, tmp2, tmp, tmp3;
+    element_t sk_;
 
 
     pairing_init_set_buf(pairing, param, strlen(param));
@@ -191,10 +203,23 @@ void blind_c(uint8_t* msg, size_t msg_len, uint8_t* self_id, uint8_t* other_id, 
     element_init_Zr(tmp, pairing);
     element_init_G1(tmp3, pairing);
 
+    element_init_Zr(sk_, pairing);
+    element_from_bytes(sk_, sk);
+
     element_from_hash(h, msg, msg_len);
+
+    *tmp_len_1 = element_length_in_bytes(h);
+    element_to_bytes(tmp_out_1, h);
     
-    element_from_hash(id_self, self_id, 8);
-    element_from_hash(id_other, other_id, 8);
+    if (self_id[7] == 1) {
+        element_set1(id_self);
+        element_set_si(id_other, 2);
+    } else {
+        element_set1(id_other);
+        element_set_si(id_self, 2);
+    }
+
+    
 
     element_set0(zero);
     
@@ -203,6 +228,11 @@ void blind_c(uint8_t* msg, size_t msg_len, uint8_t* self_id, uint8_t* other_id, 
 
     element_sub(tmp2, id_self, id_other);
     element_div(tmp, tmp1, tmp2);
+
+    element_mul(sk_, tmp, sk_);
+
+    *tmp_len = element_length_in_bytes(sk_);
+    element_to_bytes(tmp_out, sk_);
 
     element_pow_zn(tmp3, h, tmp);
 
@@ -219,3 +249,71 @@ void blind_c(uint8_t* msg, size_t msg_len, uint8_t* self_id, uint8_t* other_id, 
     element_clear(tmp3);
     pairing_clear(pairing);
 }
+
+
+void restore_c(uint8_t* s1, uint8_t* s2, uint8_t* s3, size_t* out_len) {
+    element_t s1_,s2_;
+    element_t s3_;
+    pairing_t pairing;
+
+    pairing_init_set_buf(pairing, param, strlen(param));
+    
+    element_init_Zr(s1_, pairing);
+    element_init_Zr(s2_, pairing);
+    element_init_Zr(s3_, pairing);
+    element_from_bytes(s1_, s1);
+    element_from_bytes(s2_, s2);
+
+    element_add(s3_, s1_, s2_);
+
+    *out_len = element_length_in_bytes(s3_);
+    element_to_bytes(s3, s3_);
+
+    element_clear(s1_);
+    element_clear(s2_);
+    element_clear(s3_);
+    pairing_clear(pairing);
+}
+
+
+void rand_c(uint8_t* rand_out, size_t* out_len) {
+    element_t rand;
+    pairing_t pairing;
+
+    pairing_init_set_buf(pairing, param, strlen(param));
+
+    element_init_Zr(rand, pairing);
+    element_random(rand);
+
+    *out_len = element_length_in_bytes(rand);
+    element_to_bytes(rand_out, rand);
+
+    element_clear(rand);
+    pairing_clear(pairing);
+}
+
+
+ void sign_group_c(uint8_t* out, size_t *out_len, uint8_t* msg, size_t msg_len, uint8_t* data) {
+    pairing_t pairing;
+    element_t secret_key;
+    element_t sig;
+    element_t h;
+    
+    pairing_init_set_buf(pairing, param, strlen(param));
+    
+    element_init_G1(h, pairing);
+    element_init_G1(sig, pairing);
+    element_init_Zr(secret_key, pairing);
+
+    element_from_bytes(secret_key, data);
+    element_from_bytes(h, msg);
+    element_pow_zn(sig, h, secret_key);
+    
+    *out_len = element_length_in_bytes_compressed(sig);
+    element_to_bytes_compressed(out, sig);
+    
+    element_clear(sig);
+    element_clear(secret_key);
+    element_clear(h);
+    pairing_clear(pairing);
+ }

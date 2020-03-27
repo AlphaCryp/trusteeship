@@ -20,6 +20,7 @@ extern "C" {
     pub fn aggregate_c(sig1: *mut u8, sig1: *mut u8, out: *mut u8, out_len: *mut usize);
     pub fn derived_c(
         g: *mut u8,
+        rand: *mut u8,
         id: *mut u8,
         sk: *mut u8,
         out_sk: *mut u8,
@@ -34,7 +35,23 @@ extern "C" {
         other_id: *mut u8,
         msg_out: *mut u8,
         out_len: *mut usize,
+        tmp_out: *mut u8,
+        tmp_len: *mut usize,
+        sk: *mut u8,
+        tmp_out_1: *mut u8,
+        tmp_len_1: *mut usize,
     );
+
+    pub fn restore_c (
+        s1: *mut u8,
+        s2:*mut u8,
+        s3: *mut u8,
+        out_len: *mut usize
+    );
+
+    pub fn rand_c(rand_out: *mut u8, out_len: *mut usize);
+
+    pub fn sign_group_c(out: *mut u8, out_len: *mut usize, msg: *mut u8, msg_len: usize, data: *mut u8);
 }
 
 //sign the msg, only msg[0..20] is used.
@@ -121,7 +138,7 @@ pub fn aggregate(mut sig1: Vec<u8>, mut sig2: Vec<u8>) -> Vec<u8> {
     aggregate_sig
 }
 
-pub fn derived(mut g: Vec<u8>, mut id: Vec<u8>, mut sk: Vec<u8>) -> (Vec<u8>, Vec<u8>) {
+pub fn derived(mut g: Vec<u8>, mut rand: Vec<u8>, mut id: Vec<u8>, mut sk: Vec<u8>) -> (Vec<u8>, Vec<u8>) {
     let mut out_sk = Vec::with_capacity(1024);
     let mut sk_len = 0usize;
     let mut out_pk = Vec::with_capacity(1024);
@@ -130,6 +147,7 @@ pub fn derived(mut g: Vec<u8>, mut id: Vec<u8>, mut sk: Vec<u8>) -> (Vec<u8>, Ve
     unsafe {
         derived_c(
             g.as_mut_ptr(),
+            rand.as_mut_ptr(),
             id.as_mut_ptr(),
             sk.as_mut_ptr(),
             out_sk.as_mut_ptr(),
@@ -144,10 +162,14 @@ pub fn derived(mut g: Vec<u8>, mut id: Vec<u8>, mut sk: Vec<u8>) -> (Vec<u8>, Ve
     (out_sk, out_pk)
 }
 
-pub fn blind(mut msg: Vec<u8>, mut self_id: Vec<u8>, mut other_id: Vec<u8>) -> Vec<u8> {
+pub fn blind(mut msg: Vec<u8>, mut sk: Vec<u8>, mut self_id: Vec<u8>, mut other_id: Vec<u8>) -> (Vec<u8>, Vec<u8>) {
     let mut msg_out = Vec::with_capacity(1024);
     let msg_len = msg.len();
     let mut out_len = 0usize;
+    let mut tmp_out = Vec::with_capacity(1024);
+    let mut tmp_len = 0usize;
+    let mut tmp_out_1 = Vec::with_capacity(1024);
+    let mut tmp_len_1 = 0usize;
 
     unsafe {
         blind_c(
@@ -157,12 +179,68 @@ pub fn blind(mut msg: Vec<u8>, mut self_id: Vec<u8>, mut other_id: Vec<u8>) -> V
             other_id.as_mut_ptr(),
             msg_out.as_mut_ptr(),
             &mut out_len,
+            tmp_out.as_mut_ptr(),
+            &mut tmp_len,
+            sk.as_mut_ptr(),
+            tmp_out_1.as_mut_ptr(),
+            &mut tmp_len_1,
         );
 
+        tmp_out.set_len(tmp_len);
         msg_out.set_len(out_len);
+        tmp_out_1.set_len(tmp_len_1);
+        println!("h: {:?}", tmp_out_1);
     }
 
-    msg_out
+
+    (msg_out, tmp_out)
+}
+
+
+pub fn restore(
+    mut s1: Vec<u8>,
+    mut s2: Vec<u8>,
+)-> Vec<u8> {
+    let mut tmp_out = Vec::with_capacity(1024);
+    let mut tmp_len = 0usize;
+
+    unsafe {
+        restore_c(s1.as_mut_ptr(), s2.as_mut_ptr(), tmp_out.as_mut_ptr(), &mut tmp_len);
+        tmp_out.set_len(tmp_len);
+    }
+
+    tmp_out
+}
+
+pub fn rand() -> Vec<u8> {
+    let mut tmp_out = Vec::with_capacity(1024);
+    let mut tmp_len = 0usize;
+
+    unsafe {
+        rand_c(tmp_out.as_mut_ptr(), &mut tmp_len);
+        tmp_out.set_len(tmp_len);
+    }
+
+    tmp_out
+}
+
+pub fn sign_group(mut msg: Vec<u8>, mut private_key: Vec<u8>) -> Vec<u8> {
+    unsafe {
+        let mut sig = Vec::with_capacity(30);
+        let mut sig_len = 0usize;
+        let msg_len = msg.len();
+
+        sign_group_c(
+            sig.as_mut_ptr(),
+            &mut sig_len,
+            msg.as_mut_ptr(),
+            msg_len,
+            private_key.as_mut_ptr(),
+        );
+
+        sig.set_len(sig_len);
+        sig
+    }
 }
 
 #[cfg(test)]
