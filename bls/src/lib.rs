@@ -38,8 +38,6 @@ extern "C" {
         tmp_out: *mut u8,
         tmp_len: *mut usize,
         sk: *mut u8,
-        tmp_out_1: *mut u8,
-        tmp_len_1: *mut usize,
     );
 
     pub fn restore_c(s1: *mut u8, s2: *mut u8, s3: *mut u8, out_len: *mut usize);
@@ -50,7 +48,6 @@ extern "C" {
         out: *mut u8,
         out_len: *mut usize,
         msg: *mut u8,
-        msg_len: usize,
         data: *mut u8,
     );
 }
@@ -179,8 +176,6 @@ pub fn blind(
     let mut out_len = 0usize;
     let mut tmp_out = Vec::with_capacity(1024);
     let mut tmp_len = 0usize;
-    let mut tmp_out_1 = Vec::with_capacity(1024);
-    let mut tmp_len_1 = 0usize;
 
     unsafe {
         blind_c(
@@ -193,14 +188,10 @@ pub fn blind(
             tmp_out.as_mut_ptr(),
             &mut tmp_len,
             sk.as_mut_ptr(),
-            tmp_out_1.as_mut_ptr(),
-            &mut tmp_len_1,
         );
 
         tmp_out.set_len(tmp_len);
         msg_out.set_len(out_len);
-        tmp_out_1.set_len(tmp_len_1);
-        println!("h: {:?}", tmp_out_1);
     }
 
     (msg_out, tmp_out)
@@ -239,13 +230,11 @@ pub fn sign_group(mut msg: Vec<u8>, mut private_key: Vec<u8>) -> Vec<u8> {
     unsafe {
         let mut sig = Vec::with_capacity(30);
         let mut sig_len = 0usize;
-        let msg_len = msg.len();
 
         sign_group_c(
             sig.as_mut_ptr(),
             &mut sig_len,
             msg.as_mut_ptr(),
-            msg_len,
             private_key.as_mut_ptr(),
         );
 

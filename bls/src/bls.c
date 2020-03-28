@@ -181,9 +181,7 @@ void derived_c(uint8_t* g, uint8_t* rand, uint8_t* id, uint8_t* sk, uint8_t* out
 
 void blind_c(uint8_t* msg, size_t msg_len, uint8_t* self_id,
 uint8_t* other_id, uint8_t* msg_out, size_t* out_len,
-uint8_t* tmp_out, size_t* tmp_len, uint8_t* sk,
-uint8_t* tmp_out_1, size_t* tmp_len_1
-) {
+uint8_t* tmp_out, size_t* tmp_len, uint8_t* sk) {
     element_t h;
     pairing_t pairing;
     element_t zero;
@@ -207,9 +205,6 @@ uint8_t* tmp_out_1, size_t* tmp_len_1
     element_from_bytes(sk_, sk);
 
     element_from_hash(h, msg, msg_len);
-
-    *tmp_len_1 = element_length_in_bytes(h);
-    element_to_bytes(tmp_out_1, h);
 
     if (self_id[7] == 1) {
         element_set1(id_self);
@@ -293,7 +288,7 @@ void rand_c(uint8_t* rand_out, size_t* out_len) {
 }
 
 
- void sign_group_c(uint8_t* out, size_t *out_len, uint8_t* msg, size_t msg_len, uint8_t* data) {
+ void sign_group_c(uint8_t* out, size_t *out_len, uint8_t* msg, uint8_t* data) {
     pairing_t pairing;
     element_t secret_key;
     element_t sig;
