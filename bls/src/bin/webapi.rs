@@ -53,7 +53,17 @@ async fn new(req: tide::Request<State>) -> tide::Response {
 }
 
 async fn derive(mut req: tide::Request<State>) -> tide::Response {
-    let derive: Derive = req.body_json().await.unwrap();
+    let derive: Derive = {
+        let res = req.body_json().await;
+
+        if let Err(e) = res {
+            return tide::Response::new(400)
+                .body_json(&json!({"res": e.to_string()}))
+                .unwrap();
+        }
+
+        res.unwrap()
+    };
 
     let mut g = vec![0; derive.g.len() >> 1];
     let res = faster_hex::hex_decode(derive.g.as_ref(), &mut g);
@@ -95,7 +105,15 @@ async fn derive(mut req: tide::Request<State>) -> tide::Response {
 }
 
 async fn sign(mut req: tide::Request<State>) -> tide::Response {
-    let msg_r: Msg = req.body_json().await.unwrap();
+    let msg_r: Msg = {
+        let res = req.body_json().await;
+        if let Err(e) = res {
+            return tide::Response::new(400)
+                .body_json(&json!({"res": e.to_string()}))
+                .unwrap();
+        }
+        res.unwrap()
+    };
 
     let mut msg = vec![0; msg_r.msg.len() >> 1];
     let res = faster_hex::hex_decode(msg_r.msg.as_ref(), &mut msg);
@@ -143,7 +161,15 @@ async fn sign(mut req: tide::Request<State>) -> tide::Response {
 }
 
 async fn verify(mut req: tide::Request<State>) -> tide::Response {
-    let msg_r: VerifyMsg = req.body_json().await.unwrap();
+    let msg_r: VerifyMsg = {
+        let res = req.body_json().await;
+        if let Err(e) = res {
+            return tide::Response::new(400)
+                .body_json(&json!({"res": e.to_string()}))
+                .unwrap();
+        }
+        res.unwrap()
+    };
 
     let mut sig = vec![0; msg_r.sig.len() >> 1];
     let res = faster_hex::hex_decode(msg_r.sig.as_ref(), &mut sig);
