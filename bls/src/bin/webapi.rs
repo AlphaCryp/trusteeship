@@ -197,6 +197,30 @@ async fn verify(mut req: tide::Request<State>) -> tide::Response {
         .unwrap()
 }
 
+use futures::future::BoxFuture;
+use tide::http::header;
+use tide::middleware::{Middleware, Next};
+use tide::Response;
+
+#[derive(Default)]
+pub struct Cors;
+
+impl<State: 'static + Send + Sync> Middleware<State> for Cors {
+    fn handle<'a>(
+        &'a self,
+        req: tide::Request<State>,
+        next: Next<'a, State>,
+    ) -> BoxFuture<'a, Response> {
+        Box::pin(async {
+            let res = next.run(req).await;
+            res.append_header(
+                header::ACCESS_CONTROL_ALLOW_ORIGIN.as_str(),
+                "*",
+            )
+        })
+    }
+}
+
 fn main() -> io::Result<()> {
     task::block_on(async {
         let (private_key, public_key, g) = bls::key_gen();
@@ -211,6 +235,7 @@ fn main() -> io::Result<()> {
         app.at("/new").get(new);
         app.at("/sign").post(sign);
         app.at("/verify").post(verify);
+        app.middleware(Cors);
 
         app.listen("0.0.0.0:8080").await?;
         Ok(())

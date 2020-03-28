@@ -44,12 +44,7 @@ extern "C" {
 
     pub fn rand_c(rand_out: *mut u8, out_len: *mut usize);
 
-    pub fn sign_group_c(
-        out: *mut u8,
-        out_len: *mut usize,
-        msg: *mut u8,
-        data: *mut u8,
-    );
+    pub fn sign_group_c(out: *mut u8, out_len: *mut usize, msg: *mut u8, data: *mut u8);
 }
 
 //sign the msg, only msg[0..20] is used.
