@@ -1,3 +1,6 @@
+#ifndef CKB_BLS_HELPER_H_
+#define CKB_BLS_HELPER_H_
+
 #include <stdint.h>
 #include <string.h>
 #include <pbc.h>
@@ -10,7 +13,7 @@
  alpha0 191079354656274778837764015557338301375963168470\n\
  alpha1 71445317903696340296199556072836940741717506375";
 
-int bls_verify(uint8_t* msg, size_t msg_len, uint8_t* data_s, uint8_t* data_g, uint8_t* data_p) {
+int ckb_bls_verify(uint8_t* msg, size_t msg_len, uint8_t* data_s, uint8_t* data_g, uint8_t* data_p) {
     pairing_t pairing;
     element_t public_key;
     element_t sig;
@@ -47,3 +50,5 @@ int bls_verify(uint8_t* msg, size_t msg_len, uint8_t* data_s, uint8_t* data_g, u
 
     return r;
 }
+
+#endif
