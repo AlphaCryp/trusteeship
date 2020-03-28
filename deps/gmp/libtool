@@ -44,7 +44,7 @@ available_tags=
 
 # ### BEGIN LIBTOOL CONFIG
 
-# Libtool was configured on host 3a07db56e4e3:
+# Libtool was configured on host e99066246b2b:
 
 # Shell to use when invoking shell scripts.
 SHELL="/bin/bash"

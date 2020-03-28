@@ -95,8 +95,8 @@ int main() {
   }
 
   /* verify sign */
-  if (bls_verify(tx_hash, BLAKE2B_BLOCK_SIZE, lock_bytes, pubkey, g) != 0) {
-      return ERROR_PUBKEY_BLAKE160_HASH;
+  if (ckb_bls_verify(tx_hash, BLAKE2B_BLOCK_SIZE, lock_bytes, pubkey, g) != 0) {
+      return ERROR_SECP_VERIFICATION;
   }
 
   return 0;
