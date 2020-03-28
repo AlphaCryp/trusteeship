@@ -42,16 +42,17 @@ extern "C" {
         tmp_len_1: *mut usize,
     );
 
-    pub fn restore_c (
-        s1: *mut u8,
-        s2:*mut u8,
-        s3: *mut u8,
-        out_len: *mut usize
-    );
+    pub fn restore_c(s1: *mut u8, s2: *mut u8, s3: *mut u8, out_len: *mut usize);
 
     pub fn rand_c(rand_out: *mut u8, out_len: *mut usize);
 
-    pub fn sign_group_c(out: *mut u8, out_len: *mut usize, msg: *mut u8, msg_len: usize, data: *mut u8);
+    pub fn sign_group_c(
+        out: *mut u8,
+        out_len: *mut usize,
+        msg: *mut u8,
+        msg_len: usize,
+        data: *mut u8,
+    );
 }
 
 //sign the msg, only msg[0..20] is used.
@@ -138,7 +139,12 @@ pub fn aggregate(mut sig1: Vec<u8>, mut sig2: Vec<u8>) -> Vec<u8> {
     aggregate_sig
 }
 
-pub fn derived(mut g: Vec<u8>, mut rand: Vec<u8>, mut id: Vec<u8>, mut sk: Vec<u8>) -> (Vec<u8>, Vec<u8>) {
+pub fn derived(
+    mut g: Vec<u8>,
+    mut rand: Vec<u8>,
+    mut id: Vec<u8>,
+    mut sk: Vec<u8>,
+) -> (Vec<u8>, Vec<u8>) {
     let mut out_sk = Vec::with_capacity(1024);
     let mut sk_len = 0usize;
     let mut out_pk = Vec::with_capacity(1024);
@@ -162,7 +168,12 @@ pub fn derived(mut g: Vec<u8>, mut rand: Vec<u8>, mut id: Vec<u8>, mut sk: Vec<u
     (out_sk, out_pk)
 }
 
-pub fn blind(mut msg: Vec<u8>, mut sk: Vec<u8>, mut self_id: Vec<u8>, mut other_id: Vec<u8>) -> (Vec<u8>, Vec<u8>) {
+pub fn blind(
+    mut msg: Vec<u8>,
+    mut sk: Vec<u8>,
+    mut self_id: Vec<u8>,
+    mut other_id: Vec<u8>,
+) -> (Vec<u8>, Vec<u8>) {
     let mut msg_out = Vec::with_capacity(1024);
     let msg_len = msg.len();
     let mut out_len = 0usize;
@@ -192,20 +203,20 @@ pub fn blind(mut msg: Vec<u8>, mut sk: Vec<u8>, mut self_id: Vec<u8>, mut other_
         println!("h: {:?}", tmp_out_1);
     }
 
-
     (msg_out, tmp_out)
 }
 
-
-pub fn restore(
-    mut s1: Vec<u8>,
-    mut s2: Vec<u8>,
-)-> Vec<u8> {
+pub fn restore(mut s1: Vec<u8>, mut s2: Vec<u8>) -> Vec<u8> {
     let mut tmp_out = Vec::with_capacity(1024);
     let mut tmp_len = 0usize;
 
     unsafe {
-        restore_c(s1.as_mut_ptr(), s2.as_mut_ptr(), tmp_out.as_mut_ptr(), &mut tmp_len);
+        restore_c(
+            s1.as_mut_ptr(),
+            s2.as_mut_ptr(),
+            tmp_out.as_mut_ptr(),
+            &mut tmp_len,
+        );
         tmp_out.set_len(tmp_len);
     }
 
