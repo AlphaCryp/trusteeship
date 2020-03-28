@@ -22,7 +22,7 @@ all-via-docker: ${PROTOCOL_HEADER}
 	docker run --rm -v `pwd`:/code ${BUILDER_DOCKER} bash -c "cd /code && make"
 
 specs/cells/bls: c/bls.c ${PROTOCOL_HEADER} c/common.h c/utils.h pbc
-	$(CC) $(CFLAGS) -lpbc -lgmp $(LDFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -lpbc -lgmp $(LDFLAGS) -o $@ $< /tmp/pbc/lib/libpbc.a /tmp/gmp/lib/libgmp.a -Wl,-lm
 	$(OBJCOPY) --only-keep-debug $@ $(subst specs/cells,build,$@.debug)
 	$(OBJCOPY) --strip-debug --strip-all $@
 
